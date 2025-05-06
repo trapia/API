@@ -1,6 +1,5 @@
 <?php
 namespace App\Http\Controllers;
-
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Http\Request;

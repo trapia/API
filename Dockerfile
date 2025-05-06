@@ -1,14 +1,37 @@
-# استخدم صورة PHP مع Apache
-FROM php:8.2-cli
+# استخدم صورة PHP مع FPM (FastCGI Process Manager)
+FROM php:8.0-fpm
 
-# انسخ ملفات المشروع داخل الكونتينر
-COPY . /var/www/html
+# تثبيت الأدوات المطلوبة
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    unzip \
+    git \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd
 
-# حدد مجلد العمل
-WORKDIR /var/www/html
+# تعيين مجلد العمل في السيرفر
+WORKDIR /var/www
 
-# فتح البورت 8000
-EXPOSE 8000
+# نسخ جميع الملفات من جهازك إلى السيرفر
+COPY . .
 
-# شغل السيرفر المحلي بتاع PHP على بورت 8000
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "."]
+# تثبيت Composer (مدير الاعتمادات في PHP)
+RUN curl -sS https://getcomposer.org/installer | php
+RUN mv composer.phar /usr/local/bin/composer
+
+# تثبيت الاعتمادات
+RUN composer install --no-dev --optimize-autoloader
+
+# تثبيت Apache وتشغيله
+RUN apt-get install -y apache2
+RUN a2enmod rewrite
+
+# إعدادات Apache
+COPY ./apache/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+EXPOSE 80
+
+# بدء Apache
+CMD ["apache2-foreground"]
